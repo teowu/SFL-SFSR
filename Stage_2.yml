@@ -1,0 +1,96 @@
+#### general settings
+name: SFL_SFSR_Stage_2_Bird_8x
+use_tb_logger: true
+model: sr
+distortion: sr
+scale: 8
+gpu_ids: [0,1,2,3]
+
+MixCorrupt: True
+
+#### datasets
+dataset:
+  test:
+    name: test
+    mode: LR
+    dataroot_LR: ../datasets/bird/hr/test
+datasets:
+  train:
+    name: train 
+    mode: LQGT    
+    dataroot_GT: ../datasets/bird/hr/train
+    dataroot_LQ: ../datasets/bird/lr/train
+
+    use_shuffle: true
+    n_workers: 3  # per GPU
+    batch_size: 16
+    GT_size: 256
+    use_flip: true
+    use_rot: true
+    color: RGB
+  val:
+    name: val
+    mode: LQGT
+    GT_size: 256
+    dataroot_GT: ../datasets/bird/hr/valid
+    dataroot_LQ: ../datasets/bird/lr/valid
+    
+#### network structures
+network_G:
+  labcnt: 180
+  in_nc: 3
+  out_nc: 3
+  which_model_G: MRCAN
+  n_resgroups: 8
+  n_resblocks: 6
+  level: 2
+  nf: 64
+  kernel_size: 3
+  reduction: 16
+  scale: 3
+
+#### path
+path:
+  pretrain_model_G:
+  pretrain_model_C: 
+  strict_load: true
+  resume_state: # ../experiments/DF2K_jpeg_SDSR_model/training_state/45000.state
+
+#### training settings: learning rate scheme, loss
+train:
+  br_optimizer:
+  lr_G: !!float 2e-4
+  weight_decay_G: 0
+  beta1: 0.9
+  beta2: 0.999
+  lr_D: !!float 1e-4
+  weight_decay_D: 0
+  lr_scheme: MultiStepLR
+
+  niter: 51000
+  warmup_iter: -1  # no warm up
+  lr_steps: [2000, 4000, 8000, 15000, 24000, 32000]
+  lr_gamma: 0.5
+
+  use_filters: True
+  pixel_criterion: l1
+  pixel_weight: !!float 1
+  cls_criterion: CE
+  cls_weight: !!float 1e-1
+  feature_criterion: l1
+  feature_weight: 1
+  gan_type: ragan  # gan | ragan
+  gan_weight: !!float 1e-2
+
+  D_update_ratio: 1
+  D_init_iters: 0
+
+  manual_seed: 10
+  val_freq: 1
+
+#### logger
+logger:
+  tb_freq: 10
+  print_freq: 1
+  save_checkpoint_freq: 3
+

@@ -295,7 +295,7 @@ class ResidualGroup(nn.Module):
         return res
     
 class Upsampler(nn.Sequential):
-    def __init__(self, conv, scale, n_feat, bn=False, act=False, bias=True, n_resblocks):
+    def __init__(self, conv, scale, n_feat, bn=False, act=False, bias=True, n_resblocks=4):
         m = []
         if (scale & (scale - 1)) == 0:    # Is scale = 2^n?
             for _ in range(int(math.log(scale, 2))):
@@ -315,8 +315,8 @@ class Upsampler(nn.Sequential):
 
         super(Upsampler, self).__init__(*m)
         
-class FCN_Classifier(nn.Module, n_feat):
-    def __init__(self, conv, n_feat, kernel_size=3):
+class FCN_Classifier(nn.Module):
+    def __init__(self, conv, n_feat, labcnt, kernel_size=3):
         super(FCN_Classifier, self).__init__()    
         self.block_1 = ResBlock(conv, n_feat, kernel_size, bias=True, bn=True) 
         self.down_conv_1 = nn.Conv2d(
@@ -378,7 +378,7 @@ class RCAN(nn.Module):
         self.head = nn.Sequential(*modules_head)
         self.body_shared = nn.Sequential(*modules_body)
         self.tail_SR = nn.Sequential(*modules_tail_SR)
-        self.tail_class = FCN_Classifier(n_feat)
+        self.tail_class = FCN_Classifier(default_conv, n_feat, opt_net['labcnt'])
 
     def forward(self, x):
         x = self.head(x)

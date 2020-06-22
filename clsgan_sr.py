@@ -176,8 +176,24 @@ class CLSGAN_Model(BaseModel):
             if self.cri_fea:  # load VGG perceptual loss
                 self.netF = VGGFeatureExtractor(feature_layer=feature_layer, use_bn=False,
                                           use_input_norm=True, device=self.device)
+                self.netF = DataParallel(self.netF)
+                    
+            # G feature loss
+            if train_opt['cls_weight'] > 0:
+                l_cls_type = train_opt['cls_criterion']
+                if l_cls_type == 'CE':
+                    self.cri_cls = nn.CrossEntropyLoss().to(self.device)
                 else:
-                    self.netF = DataParallel(self.netF)
+                    raise NotImplementedError('Loss type [{:s}] not recognized.'.format(l_cls_type))
+                self.l_cls_w = train_opt['cls_weight']
+            else:
+                logger.info('Remove classification loss.')
+                self.cri_cls = None
+            if self.cri_cls:  # load VGG perceptual loss
+                self.netC = VGG_Classifier(labcnt=G_opt['labcnt']).to(self.device)
+                self.netC = DataParallel(self.netC)
+                for p in self.netC.parameters():
+                    p.requires_grad = False
 
             # GD gan loss
             self.cri_gan = GANLoss(train_opt['gan_type'], 1.0, 0.0).to(self.device)
@@ -243,7 +259,7 @@ class CLSGAN_Model(BaseModel):
             p.requires_grad = False
 
         self.optimizer_G.zero_grad()
-        self.fake_H = self.netG(self.var_L)
+        self.fake_H, self.cls_L = self.netG(self.var_L)
 
         l_g_total = 0
         if step % self.D_update_ratio == 0 and step > self.D_init_iters:
@@ -255,7 +271,12 @@ class CLSGAN_Model(BaseModel):
                 fake_fea = self.netF(self.fake_H)
                 l_g_fea = self.l_fea_w * self.cri_fea(fake_fea, real_fea)
                 l_g_total += l_g_fea
-
+                
+            if self.cri_cls: # F-G classification loss
+                real_cls = self.netC(self.var_H).detach()
+                fake_cls = self.netC(self.fake_H)
+                l_g_cls = self.l_cls_w * self.cri_cls(fake_cls, real_cls)
+                l_g_total = l_g_cls
             if self.opt['train']['gan_type'] == 'gan':
                 pred_g_fake = self.netD(self.fake_H)
                 l_g_gan = self.l_gan_w * self.cri_gan(pred_g_fake, True)
@@ -266,10 +287,21 @@ class CLSGAN_Model(BaseModel):
                     self.cri_gan(pred_d_real - torch.mean(pred_g_fake), False) +
                     self.cri_gan(pred_g_fake - torch.mean(pred_d_real), True)) / 2
             l_g_total += l_g_gan
+            
+            if self.cri_cls and self.opt['train']['br_optimizer'] == 'joint':
+                l_g_branch = self.l_cls_w * self.cri_cls(self.cls_L, real_cls)
+                l_g_total += l_g_branch
 
             l_g_total.backward()
             self.optimizer_G.step()
-
+        
+            self.optimizer_G.zero_grad()
+            
+            # seperate branching update
+            if self.cri_cls and self.opt['train']['br_optimizer'] == 'branch':
+                l_branch = self.l_cls_w * self.cri_cls(self.cls_L, real_cls)
+                self.optimizer_G.step()
+                
         # D
         for p in self.netD.parameters():
             p.requires_grad = True
@@ -300,7 +332,7 @@ class CLSGAN_Model(BaseModel):
             l_d_fake = self.cri_gan(pred_d_fake - torch.mean(pred_d_real.detach()), False) * 0.5
             l_d_fake.backward()
         self.optimizer_D.step()
-
+        
         # set log
         if step % self.D_update_ratio == 0 and step > self.D_init_iters:
             if self.cri_pix:
@@ -326,7 +358,7 @@ class CLSGAN_Model(BaseModel):
     def get_current_visuals(self, need_GT=True):
         out_dict = OrderedDict()
         out_dict['LQ'] = self.var_L.detach()[0].float().cpu()
-        out_dict['rlt'] = self.fake_H.detach()[0].float().cpu()
+        out_dict['SR'] = self.fake_H.detach()[0].float().cpu()
         if need_GT:
             out_dict['GT'] = self.var_H.detach()[0].float().cpu()
         return out_dict
@@ -368,8 +400,24 @@ class CLSGAN_Model(BaseModel):
                     logger.info('Network F structure: {}, with parameters: {:,d}'.format(
                         net_struc_str, n))
                     logger.info(s)
+                    
+            if self.cri_fea:  # C, F-G Classification Network
+                s, n = self.get_network_description(self.netC)
+                if isinstance(self.netC, nn.DataParallel) or isinstance(
+                        self.netC, DistributedDataParallel):
+                    net_struc_str = '{} - {}'.format(self.netC.__class__.__name__,
+                                                     self.netC.module.__class__.__name__)
+                else:
+                    net_struc_str = '{}'.format(self.netC.__class__.__name__)
+                if self.rank <= 0:
+                    logger.info('Network C structure: {}, with parameters: {:,d}'.format(
+                        net_struc_str, n))
+                    logger.info(s)
 
     def load(self):
+        laod_path_C = self.opt['path']['pretrain_model_C']
+        assert load_path_c is not None, "Must get Pretrained Classficiation prior."
+        self.netC.load_model(load_path_C)    
         load_path_G = self.opt['path']['pretrain_model_G']
         if load_path_G is not None:
             logger.info('Loading model for G [{:s}] ...'.format(load_path_G))

@@ -1,0 +1,10 @@
+bird:
+    train: ../datasets/bird/hr/train
+    valid: ../datasets/bird/hr/valid
+    test: ../datasets/bird/hr/test    
+bird_lr:
+    train: ../datasets/bird/lr/train
+    valid: ../datasets/bird/lr/valid
+    test: ../datasets/bird/lr/test
+
+

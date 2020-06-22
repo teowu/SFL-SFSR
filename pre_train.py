@@ -3,7 +3,7 @@
 import sys
 import time
 import math
-from networks import VGG_Classifier
+from network import VGG_Classifier
 import cls_loader as loader
 import time
 import torch.nn as nn
@@ -17,7 +17,6 @@ import argparse
 import warnings
 from tensorboardX import SummaryWriter
 import torch.backends.cudnn as cudnn
-import ast
 import yaml
 from tqdm import tqdm
 from collections import OrderedDict
@@ -39,7 +38,7 @@ if __name__ == "__main__":
     parser.add_argument('--device_ids', default=(0,1,2,3), type=tuple, help='number of devices used')
     parser.add_argument('--num_workers', default=4, type=int, help='number of workers used')
     parser.add_argument('--num_epochs', default=31, type=int, help='total train epoch number') 
-    parser.add_argument('--save_path', default='expression', type=str, help='additional folder for saving the data')
+    parser.add_argument('--save_path', default='bird', type=str, help='additional folder for saving the data')
     parser.add_argument('--val_interval', default=1, type=int, help='validation interval')
     parser.add_argument('--save_freq', default=3, type=int, help='save model frequency')
     parser.add_argument('--wei_pen', default=True, type=bool, help='save model frequency')
