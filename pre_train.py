@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 import torch.nn.functional as F
 import argparse
 import warnings
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 import torch.backends.cudnn as cudnn
 import yaml
 from tqdm import tqdm
@@ -71,9 +71,17 @@ if __name__ == "__main__":
     print('Saving summary into directory ' + summary_path + '/')
     
     
+    optim_params = []
+    for k, v in model.named_parameters():
+        if v.requires_grad:
+            optim_params.append(v)
+    optimizer = torch.optim.Adam(optim_params, lr=opt.learning_rate, betas=[0.9, 0.999])
+    
     iteration = 0
     total_loss = 0
     total_correctness = 0
+    
+    model = model.cuda()
 
     for epoch in range(opt.num_epochs):
         if epoch % opt.val_interval == 0:
@@ -113,7 +121,7 @@ if __name__ == "__main__":
                 val_accuracy_dict[ele] /= val_total_dict[ele]
             
             print("###Validation accuracy in epoch {:d} is {:.2f}%, come on!####".format(epoch, positive/idx*100))
-            writer.add_scalars('Validation/Classified Accuracy (EfficientNet)', val_accuracy_dict, epoch)
+            writer.add_scalars('Validation/Classified Accuracy', val_accuracy_dict, epoch)
             writer.add_scalar('Validation/Cross Entropy Loss', loss / idx, epoch)
             writer.add_scalar('Validation/Error Rate', negative / idx, epoch) 
             writer.add_scalar('Validation/Top-5 Error Rate', 1 - T5_positive / idx, epoch) 
@@ -121,7 +129,7 @@ if __name__ == "__main__":
         
         # where to save the model
         if epoch % opt.save_freq == 0:
-            path = opt.save_path + '/{:s}_{:d}_lr={:e}.pth'.format(opt.backbone, opt.pretrained, opt.learning_rate)
+            path = opt.save_path + '/{:d}_lr={:e}.pth'.format(opt.pretrained, opt.learning_rate)
             if not os.path.exists(os.path.dirname(path)):
                 os.makedirs(os.path.dirname(path))
             torch.save(model.state_dict(), path)
