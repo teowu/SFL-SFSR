@@ -30,7 +30,11 @@ python3 pre_train.py
 ```
 
 ### Stage 2: Train Semantic-Favorable Super Resolution
-Not finished yet.
+```shell
+python3 train.py Stage_2.yml
+```
 
 ### Stage 3: Train Low-Scale Fine-Grained Classification
-Not finished yet.
+```shell
+python3 train.py Stage_3.yml
+```
