@@ -6,6 +6,7 @@ from torch.nn.parallel import DataParallel
 import lr_scheduler
 from network import *
 import logging
+import os
 
 logger = logging.getLogger('base')
 
@@ -174,15 +175,19 @@ class CLSGAN_Model(BaseModel):
                 logger.info('Remove feature loss.')
                 self.cri_fea = None
             if self.cri_fea:  # load VGG perceptual loss
-                self.netF = VGGFeatureExtractor(feature_layer=feature_layer, use_bn=False,
-                                          use_input_norm=True, device=self.device)
+                self.netF = VGGFeatureExtractor(feature_layer=34, use_bn=False,
+                                          use_input_norm=True, device=self.device).to(self.device)
                 self.netF = DataParallel(self.netF)
                     
             # G feature loss
             if train_opt['cls_weight'] > 0:
                 l_cls_type = train_opt['cls_criterion']
                 if l_cls_type == 'CE':
-                    self.cri_cls = nn.CrossEntropyLoss().to(self.device)
+                    self.cri_cls = nn.NLLLoss().to(self.device)
+                elif l_cls_type == 'l1':
+                    self.cri_cls = nn.L1Loss().to(self.device)
+                elif l_cls_type == 'l2':
+                    self.cri_cls = nn.MSELoss().to(self.device)
                 else:
                     raise NotImplementedError('Loss type [{:s}] not recognized.'.format(l_cls_type))
                 self.l_cls_w = train_opt['cls_weight']
@@ -190,10 +195,13 @@ class CLSGAN_Model(BaseModel):
                 logger.info('Remove classification loss.')
                 self.cri_cls = None
             if self.cri_cls:  # load VGG perceptual loss
-                self.netC = VGG_Classifier(labcnt=G_opt['labcnt']).to(self.device)
+                self.netC = VGGFeatureExtractor(feature_layer=49, use_bn=True,
+                                          use_input_norm=True, device=self.device).to(self.device)
+                load_path_C = self.opt['path']['pretrain_model_C']
+                assert load_path_C is not None, "Must get Pretrained Classfication prior."
+                self.netC.load_model(load_path_C)  
                 self.netC = DataParallel(self.netC)
-                for p in self.netC.parameters():
-                    p.requires_grad = False
+
 
             # GD gan loss
             self.cri_gan = GANLoss(train_opt['gan_type'], 1.0, 0.0).to(self.device)
@@ -273,6 +281,9 @@ class CLSGAN_Model(BaseModel):
                 l_g_total += l_g_fea
                 
             if self.cri_cls: # F-G classification loss
+                #print(self.netC(self.var_H).detach().shape)
+                #real_cls = self.netC(self.var_H).argmax(1).detach()
+                #fake_cls = torch.log( nn.Softmax(dim=1) (self.netC(self.fake_H)) )
                 real_cls = self.netC(self.var_H).detach()
                 fake_cls = self.netC(self.fake_H)
                 l_g_cls = self.l_cls_w * self.cri_cls(fake_cls, real_cls)
@@ -349,7 +360,7 @@ class CLSGAN_Model(BaseModel):
     def test(self):
         self.netG.eval()
         with torch.no_grad():
-            self.fake_H = self.netG(self.var_L)
+            self.fake_H, _ = self.netG(self.var_L)
         self.netG.train()
 
     def get_current_log(self):
@@ -401,7 +412,7 @@ class CLSGAN_Model(BaseModel):
                         net_struc_str, n))
                     logger.info(s)
                     
-            if self.cri_fea:  # C, F-G Classification Network
+            if self.cri_cls:  # C, F-G Classification Network
                 s, n = self.get_network_description(self.netC)
                 if isinstance(self.netC, nn.DataParallel) or isinstance(
                         self.netC, DistributedDataParallel):
@@ -414,10 +425,7 @@ class CLSGAN_Model(BaseModel):
                         net_struc_str, n))
                     logger.info(s)
 
-    def load(self):
-        laod_path_C = self.opt['path']['pretrain_model_C']
-        assert load_path_c is not None, "Must get Pretrained Classficiation prior."
-        self.netC.load_model(load_path_C)    
+    def load(self):  
         load_path_G = self.opt['path']['pretrain_model_G']
         if load_path_G is not None:
             logger.info('Loading model for G [{:s}] ...'.format(load_path_G))
@@ -430,3 +438,5 @@ class CLSGAN_Model(BaseModel):
     def save(self, iter_step):
         self.save_network(self.netG, 'G', iter_step)
         self.save_network(self.netD, 'D', iter_step)
+    def clear_data(self):
+        return None

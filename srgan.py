@@ -176,8 +176,7 @@ class SRGAN_Model(BaseModel):
             if self.cri_fea:  # load VGG perceptual loss
                 self.netF = VGGFeatureExtractor(feature_layer=feature_layer, use_bn=False,
                                           use_input_norm=True, device=self.device)
-                else:
-                    self.netF = DataParallel(self.netF)
+                self.netF = DataParallel(self.netF)
 
             # GD gan loss
             self.cri_gan = GANLoss(train_opt['gan_type'], 1.0, 0.0).to(self.device)

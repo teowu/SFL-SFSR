@@ -3,7 +3,6 @@ import math
 import argparse
 import random
 import logging
-import filters
 
 from tqdm import tqdm
 
@@ -11,10 +10,10 @@ import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
-import options.options as option
-from utils import util
+import options as option
+import util
 from data import create_dataloader, create_dataset
-from clsgan_sr import SRGAN_Model as Model
+from clsgan_sr import CLSGAN_Model as Model
 from srgan import SRGAN_Model as Baseline_Model
 
 
@@ -97,11 +96,9 @@ def main():
     opt = option.dict_to_nonedict(opt)
 
     # -------------------------------------------- ADDED --------------------------------------------
-    filter_low = filters.FilterLow(gaussian=False)
     l1_loss = torch.nn.L1Loss()
     mse_loss = torch.nn.MSELoss()
     if torch.cuda.is_available():
-        filter_low = filter_low.cuda()
         l1_loss = l1_loss.cuda()
         mse_loss = mse_loss.cuda()
     # -----------------------------------------------------------------------------------------------
@@ -223,7 +220,6 @@ def main():
                     #avg_psnr_n += util.calculate_psnr(cropped_lq_img * 255, cropped_nr_img * 255)
 
                     # ----------------------------------------- ADDED -----------------------------------------
-                    val_pix_err_f += l1_loss(filter_low(visuals['SR']), filter_low(visuals['GT']))
                     val_pix_err_nf += l1_loss(visuals['SR'], visuals['GT'])
                     val_mean_color_err += mse_loss(visuals['SR'].mean(2).mean(1), visuals['GT'].mean(2).mean(1))
                     # -----------------------------------------------------------------------------------------
@@ -248,7 +244,6 @@ def main():
                 if opt['use_tb_logger'] and 'debug' not in opt['name']:
                     tb_logger.add_scalar('val_psnr', avg_psnr, current_step)
                     tb_logger.add_scalar('val_ssim', avg_ssim, current_step)
-                    tb_logger.add_scalar('val_pix_err_f', val_pix_err_f, current_step)
                     tb_logger.add_scalar('val_pix_err_nf', val_pix_err_nf, current_step)
                     tb_logger.add_scalar('val_mean_color_err', val_mean_color_err, current_step)
 

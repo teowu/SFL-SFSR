@@ -41,7 +41,7 @@ network_G:
   in_nc: 3
   out_nc: 3
   which_model_G: MRCAN
-  n_resgroups: 8
+  n_resgroups: 6
   n_resblocks: 6
   level: 2
   nf: 64
@@ -61,10 +61,12 @@ train:
   br_optimizer: joint # joint | branch
   lr_G: !!float 2e-4
   weight_decay_G: 0
-  beta1: 0.9
-  beta2: 0.999
+  beta1_G: 0.9
+  beta2_G: 0.999
   lr_D: !!float 1e-4
   weight_decay_D: 0
+  beta1_D: 0.9
+  beta2_D: 0.999
   lr_scheme: MultiStepLR
 
   niter: 51000

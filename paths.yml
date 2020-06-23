@@ -6,5 +6,8 @@ bird_lr:
     train: ../datasets/bird/lr/train
     valid: ../datasets/bird/lr/valid
     test: ../datasets/bird/lr/test
-
+bird_lr_x16:
+    train: ../datasets/bird/lr_x16/train
+    valid: ../datasets/bird/lr_x16/valid
+    test: ../datasets/bird/lr_x16/test
 

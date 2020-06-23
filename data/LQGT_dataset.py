@@ -5,6 +5,7 @@ import lmdb
 import torch
 import torch.utils.data as data
 import data.util as util
+import os
 
 
 class LQGTDataset(data.Dataset):
@@ -28,6 +29,12 @@ class LQGTDataset(data.Dataset):
             self.paths_NF, self.sizes_NF = util.get_image_paths(self.data_type, opt['dataroot_NF'])
         assert self.paths_GT, 'Error: GT path is empty.'
         if self.paths_LQ and self.paths_GT:
+            if len(self.paths_LQ) != len(self.paths_GT):
+                self.paths_nGT = []
+                for ele in self.paths_GT:
+                    if os.path.join(opt['dataroot_LQ'], ele.split('/')[-1]) in self.paths_LQ:
+                        self.paths_nGT.append(ele)
+            self.paths_GT = self.paths_nGT
             assert len(self.paths_LQ) == len(
                 self.paths_GT
             ), 'GT and LQ datasets have different number of images - {}, {}.'.format(

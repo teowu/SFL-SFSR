@@ -146,21 +146,72 @@ class VGGFeatureExtractor(nn.Module):
             x = (x - self.mean) / self.std
         output = self.features(x)
         return output
+class VGGFeatureExtractor(nn.Module):
+    def __init__(self, feature_layer=34, use_bn=False, use_input_norm=True,
+                 device=torch.device('cpu')):
+        super(VGGFeatureExtractor, self).__init__()
+        self.use_input_norm = use_input_norm
+        if use_bn:
+            model = torchvision.models.vgg19_bn(pretrained=True)
+        else:
+            model = torchvision.models.vgg19(pretrained=True)
+        if self.use_input_norm:
+            mean = torch.Tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(device)
+            # [0.485 - 1, 0.456 - 1, 0.406 - 1] if input in range [-1, 1]
+            std = torch.Tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(device)
+            # [0.229 * 2, 0.224 * 2, 0.225 * 2] if input in range [-1, 1]
+            self.register_buffer('mean', mean)
+            self.register_buffer('std', std)
+        self.features = nn.Sequential(*list(model.features.children())[:(feature_layer + 1)])
+        # No need to BP to variable
+        for k, v in self.features.named_parameters():
+            v.requires_grad = False
 
+    def forward(self, x):
+        # Assume input range is [0, 1]
+        if self.use_input_norm:
+            x = (x - self.mean) / self.std
+        output = self.features(x)
+        return output
+    
+    def load_model(self, pretrain):
+        print("Loading trained model from {}......".format(pretrain))
+        model_dict = self.state_dict()
+        pretrain_dict = torch.load(pretrain)
+        pretrain_dict = pretrain_dict["state_dict"] if "state_dict" in pretrain_dict else pretrain_dict
+        from collections import OrderedDict
+
+        new_dict = OrderedDict()
+        for k, v in pretrain_dict.items():
+            if k.startswith("module"):
+                k = k[7:]
+            new_dict[k] = v
+
+    
 class VGG_Classifier(nn.Module):
-    def __init__(self, labcnt=180, pretrained=False):
+    def __init__(self, labcnt=180, use_input_norm=True, pretrained=False):
         super(VGG_Classifier, self).__init__()
+        self.use_input_norm = use_input_norm
+        if self.use_input_norm:
+            mean = torch.Tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
+            # [0.485 - 1, 0.456 - 1, 0.406 - 1] if input in range [-1, 1]
+            std = torch.Tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
+            # [0.229 * 2, 0.224 * 2, 0.225 * 2] if input in range [-1, 1]
+            self.register_buffer('mean', mean)
+            self.register_buffer('std', std)
         model = torchvision.models.vgg19_bn(pretrained=pretrained)
         self.features = nn.Sequential(*list(model.features.children()))
-        n_feat = list(model.features.children())[-1].weight.data.size(1)
+        n_feat = 512 # for VGG19
         # add up n_feat if not enough
         self.ftcls = []
-        self.ftcls.append(nn.AdaptiveAvgPool(1))
+        self.ftcls.append(nn.AdaptiveAvgPool2d(1))
         self.ftcls.append(nn.ReLU(True))
         self.ftcls.append(nn.Conv2d(n_feat, labcnt, kernel_size=1))
         self.linears = nn.Sequential(*self.ftcls)
         
     def forward(self, x):
+        if self.use_input_norm:
+            x = (x - self.mean) / self.std
         output = self.features(x)
         output = self.linears(output)
         output = output.view(output.size(0), -1)
@@ -321,14 +372,14 @@ class FCN_Classifier(nn.Module):
         self.block_1 = ResBlock(conv, n_feat, kernel_size, bias=True, bn=True) 
         self.down_conv_1 = nn.Conv2d(
             n_feat, 2 * n_feat, 3, padding=1, stride=2, bias=True)
-        self.block_2 = ResBlock(conv, n_feat, kernel_size, bias=True, bn=True)
+        self.block_2 = ResBlock(conv, 2 * n_feat, kernel_size, bias=True, bn=True)
         self.down_conv_2 = nn.Conv2d(
-            (2 *n_feat, 4 * n_feat, 3, padding=1, stride=2, bias=True)
-        self.relu = nn.PReLU(True)
+            2 * n_feat, 4 * n_feat, 3, padding=1, stride=2, bias=True)
+        self.relu = nn.ReLU(True)
         self.ftcls = []
-        self.ftcls.append(nn.AdaptiveAvgPool(1))
+        self.ftcls.append(nn.AdaptiveAvgPool2d(1))
         self.ftcls.append(nn.ReLU(True))
-        self.ftcls.append(nn.Conv2d(n_feat, labcnt, kernel_size=1))
+        self.ftcls.append(nn.Conv2d(4 * n_feat, labcnt, kernel_size=1))
         self.linears = nn.Sequential(*self.ftcls)
         
     def forward(self, fea):
@@ -349,7 +400,7 @@ class RCAN(nn.Module):
         reduction = opt_net['reduction']
         scale = opt_net['scale']
         act = nn.ReLU(True)
-        
+        self.cls = opt_net['cls']
         # RGB mean for DIV2K
         rgb_mean = (0.4488, 0.4371, 0.4040)
         rgb_std = (1.0, 1.0, 1.0)
@@ -378,7 +429,7 @@ class RCAN(nn.Module):
         self.head = nn.Sequential(*modules_head)
         self.body_shared = nn.Sequential(*modules_body)
         self.tail_SR = nn.Sequential(*modules_tail_SR)
-        self.tail_class = FCN_Classifier(default_conv, n_feat, opt_net['labcnt'])
+        self.tail_cls = FCN_Classifier(default_conv, n_feats, opt_net['labcnt'])
 
     def forward(self, x):
         x = self.head(x)
@@ -386,10 +437,13 @@ class RCAN(nn.Module):
         res = self.body_shared(x)
         res += x
 
-        x = self.tail_SR(res)
-        cls_x = self.tail_cls(res)
-
-        return x, cls_x
+        
+        y = self.tail_SR(res)
+        if self.cls:
+            cls_x = torch.log(nn.Softmax(dim=0)(self.tail_cls(res)))
+            return y, cls_x
+        else:
+            return y, None
 
     def load_state_dict(self, state_dict, strict=False):
         own_state = self.state_dict()
