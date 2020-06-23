@@ -34,6 +34,7 @@ datasets:
     mode: LQGT
     GT_size: 256
     dataroot_GT: ../datasets/bird/hr/valid
+    dataroot_CAM: ../datasets/bird/lr_x16/cam_valid
     dataroot_LQ: ../datasets/bird/lr_x16/valid
     
 #### network structures

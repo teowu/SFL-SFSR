@@ -10,4 +10,6 @@ bird_lr_x16:
     train: ../datasets/bird/lr_x16/train
     valid: ../datasets/bird/lr_x16/valid
     test: ../datasets/bird/lr_x16/test
+    cam_train: ../datasets/bird/lr_x16/cam_train
+    cam_valid: ../datasets/bird/lr_x16/cam_valid
 

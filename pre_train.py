@@ -129,7 +129,7 @@ if __name__ == "__main__":
         
         # where to save the model
         if epoch % opt.save_freq == 0:
-            path = opt.save_path + '/{:d}_lr={:e}.pth'.format(opt.pretrained, opt.learning_rate)
+            path = opt.save_path + '/{:d}_{:d}_lr={:e}.pth'.format(epoch, opt.pretrained, opt.learning_rate)
             if not os.path.exists(os.path.dirname(path)):
                 os.makedirs(os.path.dirname(path))
             torch.save(model.state_dict(), path)

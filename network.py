@@ -189,6 +189,16 @@ class VGG_Classifier(nn.Module):
         output = self.linears(output)
         output = output.view(output.size(0), -1)
         return output
+    
+    def get_cam(self, x, scale):
+        if self.use_input_norm:
+            x = (x - self.mean) / self.std
+        output = self.features(x)
+        idx = torch.argmax(self.forward(x)[0])
+        u = self.linears[2](output)[:,idx,:,:].unsqueeze(1)
+        print(u.shape)
+        cam = F.interpolate(u, scale_factor=scale*32, mode='bilinear')
+        return cam
 
     def load_model(self, pretrain):
         print("Loading trained model from {}......".format(pretrain))
