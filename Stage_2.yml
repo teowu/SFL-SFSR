@@ -19,7 +19,7 @@ datasets:
     name: train 
     mode: LQGT    
     dataroot_GT: ../datasets/bird/hr/train
-    dataroot_LQ: ../datasets/bird/lr/train
+    dataroot_LQ: ../datasets/bird/lr_x16/train
 
     use_shuffle: true
     n_workers: 3  # per GPU
@@ -33,7 +33,7 @@ datasets:
     mode: LQGT
     GT_size: 256
     dataroot_GT: ../datasets/bird/hr/valid
-    dataroot_LQ: ../datasets/bird/lr/valid
+    dataroot_LQ: ../datasets/bird/lr_x16/valid
     
 #### network structures
 network_G:
@@ -78,6 +78,7 @@ train:
   pixel_criterion: l1
   pixel_weight: !!float 1
   cls_criterion: l1
+  
   cls_weight: !!float 1e-5
   feature_criterion: l1
   feature_weight: !!float 8e-2
