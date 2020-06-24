@@ -1,40 +1,90 @@
 # Shared Features Learning on Semantic-Favorable Super Resolution
 CVDL2020 Project, Contributed by Haoning Wu, Jiaheng Han
+
 Mentor: Yadong Mu
 
-## Introduction
+## Background and Motivation
+
 Super Resolution task this year has been progressed by Deep End-to-end Neural Networks. When talking about Single Image Super Resolution (SISR), we are always wondering where the implicit mechanism of the encoder-decoder structure of such end-to-end networks lies. 
 
 Most common view is that the SR generator (encoder-decoder) becomes some feature extractor which learns "add what details on what original textures", and among these years, GAN-based methods are proposed to learn the **latent distribution** of real images and generate more photo-realistic SR result instead of just trying to improve the PSNR/SSIM performance.
 
-So, our baseline methods are set as EDSR in 2017 and ESRGAN pipeline (with EDSR generator) in 2018.
+So, our baseline methods are set as RCAN in 2018 and ESRGAN pipeline (with RCAN generator) in 2018.
 
-However, GAN surely can make "realistic" textures on SR domain, but it fails to decode the distinct semantics into different textures, which often generates statistically real but not semantically reasonable textures. This thing fails especially when we try to reconstruct large scale (e.g. *32 by 32 -> 256 by 256, 8x*)  ground truth of faces or other fine-grained specific contents: we may SR a smiling face into something very strange, maybe an angry face, or something not a face.
+However, GAN surely can make "realistic" textures on SR domain, but it fails to decode the distinct semantics into different textures, which often generates statistically real but not semantically reasonable textures. This thing fails especially when we try to reconstruct large scale (e.g. *14 by 14 -> 224 by 224, 16x*)  ground truth of faces or other fine-grained specific contents: we may SR a smiling face into something very strange, maybe an angry face, or something not a face.
 
-Another problem often confusing researchers is the Low Resolution fine-grained classification, focusing on more real-world fine-grained classification usage where the recognition objective is a small part of the whole input and is detected through some coarse-grained detection algorithm. When often **the higher-scale fine-grained classification** networks are learnt, these networks do not transfer well on small samples.
+Another problem often confusing researchers is the Low Resolution fine-grained classification, focusing on more real-world fine-grained classification usage where the recognition objective is a small part of the whole input and is detected through some coarse-grained detection algorithm. When often **the higher-scale fine-grained classification** networks are learnt, these networks do not transfer well on small samples. 
 
-Now the branches are set together and consider how a human see something far: we're doing the "what this is (classfication)" and "human eye super resolution" synchronously, where the two task help each other in this mechanism. 
+On the contrary, recent researches on fine-grained classification has demonstrated that the attention areas (where the pixels contribute the most to the Prediction Labels) are often very local, which suggests that prior knowledge from common fine-grained classification will be focusing more on **local semantic features**.
 
-**In order to adverse the loss of fine-grained semantics of such super resolutions tasks,** we have decided to indirectly use our pretrained higher-scale fine-grained classfication models, and use this thing to both help the Semantic-Favorable Super Resolution and Low-Scale Fine-Grained Classification. Our contributions are mainly as follows:
+Now the branches are set together and consider how a human see something far: we're doing the "what this is (recognition)" and "human eye super-resolution" synchronously, where the two task help each other in this mechanism. We 
 
-- First, without introducing real labels of the Low Resolution fine-grained images,  we designed a classifier module into the common SR pipeline as a prior and help the Super Resolution network to learn more "realistic" results not only in textures, but in semantics as well.
-- Second, we carefully designed the **shared features** learning for *Super Resolution* and *Low Resolution Classfication*, enforcing the encoder to learn both semantic and textural features and helps extract the latent distribution of the image space. 
+**We desire to construct deep learning pipelines to modulate human eye super-resolution process, learn Semantic-Favorable Super Resolution, especially in extreme cases.** For this purpose, we have decided to indirectly use our pretrained higher-scale fine-grained classfication models, and use this thing to both help the Semantic-Favorable Super Resolution and Low-Scale Fine-Grained Classification. Our contributions are mainly as follows:
+
+- First, without introducing real labels of the Low Resolution fine-grained images, we designed a specific feature-extractor prior module into the common SR pipeline as a prior and help the Super Resolution network to learn more "realistic" results not only in textures, but in semantics as well.
+- Second, we carefully designed the **shared features** learning for *Super Resolution* and *Low Resolution Classfication*, enforcing the encoder to learn both semantic and textural features and helps extract the latent distribution of the image space. This will both help low-res recognition and extreme super resolution, where in this paper we only talk about the latter one.
+- Third, we composed the spatial attention mechanism which can make use of class activation maps to localize the attention areas and help rebuild semantic-favorable super resolution results on heat point areas.
 
 
-## How to run
-There are generally three stages of the whole experiment pipeline.
+## How to Train
+
+There are generally four stages of the whole experiment pipeline.
 
 ### Stage 1: Pre-train a fine-grained classification
+
+RUN as follows. It will take around 20 minutes for pre-processing.
+
 ```shell
 python3 pre_train.py
 ```
 
-### Stage 2: Train Semantic-Favorable Super Resolution
+Please rename your pre-trained model as *../bird/prt.pth* before processing the following stages.
+
+**If you have only got HR datasets, please run ``python3 downsampler.py`` to generate LR samples.**
+
+### Stage 2: Add Fine-Grained Classifier Loss
+
+You may try both ways of import this loss, 1. directly learning from pre-trained classification results, 2. learn from the feature layers in the pre-trained *Classification Module*. The second one is set as default.
+
+RUN as follows.
+
 ```shell
 python3 train.py Stage_2.yml
 ```
 
-### Stage 3: Train Low-Scale Fine-Grained Classification
+### Stage 3: Shared-Features Learning (SFL)
+
+RUN as follows.
+
 ```shell
 python3 train.py Stage_3.yml
+```
+
+*REMINDer: The low-res Classification result is not benchmarked in the process above.*
+
+### Stage 4: Spatial Attention Mechanism (SAM)
+
+Before training Stage 4, you should at first generate the class activation map dataset and place it in the directory corresponding to [it](Stage_4.yml).
+
+```shell
+python3 cam_generator.py
+```
+
+Then RUN as follows.
+
+```shell
+python3 train.py Stage_4.yml
+```
+
+### Combine the Stages
+```shell
+python3 train.py train.yml
+```
+
+## How to Test
+
+*Not finish building yet. When finished, run the following code.*
+
+```shell
+python3 test.py test.yml
 ```

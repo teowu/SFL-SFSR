@@ -24,22 +24,24 @@ val_loader = DataLoader(dataset=val_set, num_workers=1, batch_size=1, shuffle=Fa
 
 for image, label, indices in train_loader:
     with torch.no_grad():
-        print(torch.log(torch.nn.Softmax()(model (image.cuda())) ))
         image = image.to('cuda')
         cam = model.get_cam(image, 1/16).cpu()
         mm = torch.min(cam)
         MM = torch.max(cam)
-        print(mm, MM)
     save_path = os.path.join(target['cam_train'], indices[0].split('/')[-1])
     print(save_path)
     cv2.imwrite(save_path, util.tensor2img(cam, min_max=(mm,MM)))
+
+
 
 
 for image, label, indices in val_loader:
     with torch.no_grad():
         image = image.to('cuda')
         cam = model.get_cam(image, 1/16).cpu()
+        mm = torch.min(cam)
+        MM = torch.max(cam)
     save_path = os.path.join(target['cam_valid'], indices[0].split('/')[-1])
     print(save_path)
-    cv2.imwrite(save_path, util.tensor2img(cam))    
+    cv2.imwrite(save_path, util.tensor2img(cam, min_max=(mm,MM)))   
     

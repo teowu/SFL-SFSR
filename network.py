@@ -35,7 +35,7 @@ class Discriminator_VGG_256(nn.Module):
         self.conv4_1 = nn.Conv2d(nf * 8, nf * 8, 4, 2, 1, bias=False)
         self.bn4_1 = nn.BatchNorm2d(nf * 8, affine=True)
 
-        self.linear1 = nn.Linear(2048 * 4 * 4, 100)
+        self.linear1 = nn.Linear(1568 * 4 * 4, 100)
         self.linear2 = nn.Linear(100, 1)
 
         # activation function
@@ -195,9 +195,9 @@ class VGG_Classifier(nn.Module):
             x = (x - self.mean) / self.std
         output = self.features(x)
         idx = torch.argmax(self.forward(x)[0])
-        u = self.linears[2](output)[:,idx,:,:].unsqueeze(1)
+        u = self.linears[2](self.linears[1](output))[:,idx,:,:].unsqueeze(1)
         print(u.shape)
-        cam = F.interpolate(u, scale_factor=scale*32, mode='bilinear')
+        cam = F.interpolate(u, scale_factor=scale*32, mode='bicubic')
         return cam
 
     def load_model(self, pretrain):

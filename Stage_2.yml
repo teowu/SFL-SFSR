@@ -24,14 +24,14 @@ datasets:
     use_shuffle: true
     n_workers: 3  # per GPU
     batch_size: 16
-    GT_size: 256
+    GT_size: 224
     use_flip: true
     use_rot: true
     color: RGB
   val:
     name: val
     mode: LQGT
-    GT_size: 256
+    GT_size: 224
     dataroot_GT: ../datasets/bird/hr/valid
     dataroot_LQ: ../datasets/bird/lr_x16/valid
     
@@ -52,7 +52,7 @@ network_G:
 #### path
 path:
   pretrain_model_G:
-  pretrain_model_C: ../bird/pretrained_new.pth
+  pretrain_model_C: ../bird/prt.pth
   strict_load: true
   resume_state: # ../experiments/DF2K_jpeg_SDSR_model/training_state/45000.state
 
@@ -77,13 +77,12 @@ train:
   use_filters: True
   pixel_criterion: l1
   pixel_weight: !!float 1
-  cls_criterion: l1
-  
-  cls_weight: !!float 1e-5
+  cls_criterion: l1  
+  cls_weight: 0
   feature_criterion: l1
   feature_weight: !!float 8e-2
   gan_type: ragan  # gan | ragan
-  gan_weight: !!float 1e-3
+  gan_weight: !!float 2e-3
 
   D_update_ratio: 1
   D_init_iters: 0

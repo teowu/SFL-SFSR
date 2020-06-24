@@ -140,7 +140,7 @@ class CLSGAN_Model(BaseModel):
         self.netG = RCAN(G_opt).to(self.device)
         self.netG = DataParallel(self.netG)
         if self.is_train:
-            self.netD = Discriminator_VGG_256(G_opt['in_nc'], G_opt['nf']).to(self.device)
+            self.netD = Discriminator_VGG_256(3, G_opt['nf']).to(self.device)
             self.netD = DataParallel(self.netD)
             self.netG.train()
             self.netD.train()
@@ -201,6 +201,14 @@ class CLSGAN_Model(BaseModel):
                 assert load_path_C is not None, "Must get Pretrained Classfication prior."
                 self.netC.load_model(load_path_C)  
                 self.netC = DataParallel(self.netC)
+                
+            if train_opt['brc_weight'] > 0:
+                self.l_brc_w = train_opt['brc_weight'] 
+                self.netR = VGG_Classifier().to(self.device)
+                load_path_C = self.opt['path']['pretrain_model_C']
+                assert load_path_C is not None, "Must get Pretrained Classfication prior."
+                self.netR.load_model(load_path_C)  
+                self.netR = DataParallel(self.netR)
 
 
             # GD gan loss
@@ -299,9 +307,10 @@ class CLSGAN_Model(BaseModel):
                     self.cri_gan(pred_g_fake - torch.mean(pred_d_real), True)) / 2
             l_g_total += l_g_gan
             
-            if self.cri_cls and self.opt['train']['br_optimizer'] == 'joint':
-                l_g_branch = self.l_cls_w * self.cri_cls(self.cls_L, real_cls)
-                l_g_total += l_g_branch
+            if self.opt['train']['br_optimizer'] == 'joint':
+                ref = self.netR(self.var_H).argmax(dim=1)
+                l_branch = self.l_brc_w * nn.CrossEntropyLoss()(self.cls_L, ref)
+                self.optimizer_G.step()
 
             l_g_total.backward()
             self.optimizer_G.step()
@@ -309,8 +318,9 @@ class CLSGAN_Model(BaseModel):
             self.optimizer_G.zero_grad()
             
             # seperate branching update
-            if self.cri_cls and self.opt['train']['br_optimizer'] == 'branch':
-                l_branch = self.l_cls_w * self.cri_cls(self.cls_L, real_cls)
+            if self.opt['train']['br_optimizer'] == 'branch':
+                ref = self.netR(self.var_H).argmax(dim=1)
+                l_branch = self.l_brc_w * nn.CrossEntropyLoss()(self.cls_L, ref)
                 self.optimizer_G.step()
                 
         # D

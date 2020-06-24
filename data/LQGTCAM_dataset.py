@@ -16,7 +16,7 @@ class LQGTCAMDataset(data.Dataset):
     '''
 
     def __init__(self, opt):
-        super(LQGTDataset, self).__init__()
+        super(LQGTCAMDataset, self).__init__()
         self.opt = opt
         self.data_type = self.opt['data_type']
         self.paths_LQ, self.paths_GT, self.paths_CLQ = None, None, None
@@ -85,7 +85,8 @@ class LQGTCAMDataset(data.Dataset):
         # get LQ image
         if self.paths_LQ:
             LQ_path = self.paths_LQ[index]
-            CAM_path = os.join(opt['dataroot_CAM'], LQ_path.split('/')[-1])
+            CAM_path = os.path.join(self.opt['dataroot_CAM'], LQ_path.split('/')[-1])
+            #print(LQ_path, CAM_path)
             if self.data_type == 'lmdb':
                 resolution = [int(s) for s in self.sizes_LQ[index].split('_')]
             else:
@@ -94,7 +95,7 @@ class LQGTCAMDataset(data.Dataset):
             img_CAM = util.read_img(self.LQ_env, CAM_path, resolution)
             if img_CAM.ndim == 2:
                 img_CAM = np.expand_dims(img_CAM, axis=2)
-            img_LQ = np.concatenate((img_LQ, img_CAM), dim=2)
+            img_LQ = np.concatenate((img_LQ, img_CAM), axis=2)
         else:  # down-sampling on-the-fly
             # randomly scale during training
             if self.opt['phase'] == 'train':
