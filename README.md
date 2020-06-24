@@ -25,12 +25,26 @@ Now the branches are set together and consider how a human see something far: we
 - Second, we carefully designed the **shared features** learning for *Super Resolution* and *Low Resolution Classfication*, enforcing the encoder to learn both semantic and textural features and helps extract the latent distribution of the image space. This will both help low-res recognition and extreme super resolution, where in this paper we only talk about the latter one.
 - Third, we composed the spatial attention mechanism which can make use of class activation maps to localize the attention areas and help rebuild semantic-favorable super resolution results on heat point areas.
 
+## Method Overview
+
+Our method is based on "Learning from the Recognition priors". Because of the characteristics of the priors, we proposed **three ways of Utilizing the Priors**, shown in the following figure.
+
+![Fig_2](figs/fig_2.png)
+
+And the prior is based on the pre-training of the following FCN-VGG Classifier.
+
+![Fig_3](figs/fig_7.png)
+
+You can see the detailed method in how-to-train section.
+
 
 ## How to Train
 
 There are generally four stages of the whole experiment pipeline.
 
 ### Stage 1: Pre-train a fine-grained classification
+
+![Fig_4](figs/fig_8.png)
 
 RUN as follows. It will take around 20 minutes for pre-processing.
 
@@ -44,7 +58,13 @@ Please rename your pre-trained model as *../bird/prt.pth* before processing the 
 
 ### Stage 2: Add Fine-Grained Classifier Loss
 
-You may try both ways of import this loss, 1. directly learning from pre-trained classification results, 2. learn from the feature layers in the pre-trained *Classification Module*. The second one is set as default.
+![Fig_5](figs/fig_6.png)
+
+The overall loss with CLSLoss added is shown in the figure above.
+
+You may try both ways of importing this loss, 
+1. directly learning from pre-trained classification results, 
+2. learn from the feature layers in the pre-trained *Classification Module*. The second one is set as default.
 
 RUN as follows.
 
@@ -53,6 +73,8 @@ python3 train.py Stage_2.yml
 ```
 
 ### Stage 3: Shared-Features Learning (SFL)
+
+![Fig_6](figs/fig_5.png)
 
 RUN as follows.
 
@@ -64,11 +86,15 @@ python3 train.py Stage_3.yml
 
 ### Stage 4: Spatial Attention Mechanism (SAM)
 
-Before training Stage 4, you should at first generate the class activation map dataset and place it in the directory corresponding to [it](Stage_4.yml).
+![Fig_7](figs/fig_4.png)
+
+Before training Stage 4, you should at first generate the class activation map dataset and place it in the directory corresponding to [it](Stage_4.yml). The figure above shows the method used in [cam_generator.py](cam_generator.py)
 
 ```shell
 python3 cam_generator.py
 ```
+
+![Fig_8](figs/fig_3.png)
 
 Then RUN as follows.
 
@@ -89,13 +115,81 @@ python3 train.py train.yml
 python3 test.py test.yml
 ```
 
+
+## base OpenSource Repositories
+
+The proposed method is brand new, but in order to not "build the wheels again", our codes are based on the following OpenSource Repositories on GitHub.
+
+1. **Xintao Wang et. al, BasicSR** (basic SR and SRGAN pipeline, used as baseline)
+
+This framework is very good for Super Resolution practicers because it provides many functionals such as load/save network, update learning rate and network printing, etc. It also supports changing the loss functions, network architectures and dataloaders very conveniently. We are building our blocks on the BasicSR base class and **altered** the **loss functions, network architectures, training pipelines and dataloaders**.
+
+The raw module (ESRGAN with iterative-RCAN) is set as the baseline model.
+
+2. **Yulun Zhang et. al, RCAN** (state-of-the art SR module)
+
+RCAN is the state-of-the-art Super Resolution Generator module and is often used as backbone of . However, as it is primarily designed for 2x/3x/4x Super Resolution, the original RCAN uses the LR image as input and provides *only one convolutional layer* for each upsampling step(2x) for 4x/8x/16x/... **Large Scale Super Resolution**. This will largely reduce the *learning ability* of multi-scale features, especially intermediate-scale features. As we are training on 8x/16x Large Scale Super Resolution, we must make sure that the intermediate scales are well-built, and we added a residual group (with 6 residual blocks and 12 convolutional layers) for Super Resolution.
+
+This iterative-RCAN is also set as the baseline model.
+
+3. **Timothy Haoning Wu, DMDR** (a workflow on real-world SR based on BasicSR)
+
+The dataset generator is based on my DMDR and added the four channel concatenate input for *Spatial Attention Mechanism* learning. The train.py is also based on this repo finished earlier this year.
+
+This method is far from the DMDR, and I used the DMDR just because I'm familiar with the general pipelines I built on this work.
+
+4. Torchvision
+
+While building the pre-training network, we used the VGG19-Pretrained architecture from Torchvision and removed all fc-layers, changing them to Global Average Pooling (GAP) and Convolution (Kernel-Size=1).
+
+
+## Contributions of Team Members
+
+####  Phase 1:  Pipeline Construcion
+
+This part is finished together.
+
+Idea and Architecture Construction: Haoning Wu and Jiaheng Han
+
+Dataset Acquiring and Pre-processing: Jiaheng Han
+
+Kernel Pipeline Construction: Haoning Wu
+
+
+#### Phase 2: Method Building
+
+This part is finished together.
+
+
+Network Code Building: Haoning Wu
+
+Model Pipeline Building: Haoning Wu
+
+Phase 1 Pre-training Framework: Jiaheng Han
+
+#### Phase 3: Experimenting
+
+This part is finished together.
+
+
+CAM Generating: Jiaheng Han (Coding) and Haoning Wu (Debugging)
+
+Experimental Debugging on Model Pipeline: Jiaheng Han
+
+Major-flow Experimenting on Phase 2,3,4: Haoning Wu
+
+#### Phase 4: Method Review (Report and Presentation)
+
+This part is finished together.
+
 ## Experimental Results
 
 ### Qualitative Results (Bird)
 
 ![Fig_1](figs/fig_1.png)
 
-Remark the heads and legs of the two birds, SFL has better reconstruction on these parts.
+Remark the **head and legs** of the two birds, SFL has obviously better reconstruction on these parts.
+
 The SAM is relatively weaker on reconstructing these parts, however it produces more realistic bird body, comparing to the baseline ESRGAN algorithm.
 
 ### Quantitive Comparison
