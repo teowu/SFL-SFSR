@@ -88,3 +88,30 @@ python3 train.py train.yml
 ```shell
 python3 test.py test.yml
 ```
+
+## Experimental Results
+
+### Qualitative Results (Bird)
+
+![Fig_1](figs/fig_1.png)
+
+Remark the heads and legs of the two birds, SFL has better reconstruction on these parts.
+The SAM is relatively weaker on reconstructing these parts, however it produces more realistic bird body, comparing to the baseline ESRGAN algorithm.
+
+### Quantitive Comparison
+
+We have tested the following combinations so far, showing the previledge of our method on preserving the structural similarity and obtain better image quality on IQA (Image Quality Assessment) modules. With ablation study, the Share Features Module should become the one that contributes most in the three, while the only CLSLoss even degrades the performance. 
+
+The result of only CLSLoss (Stage 2) does not match our expectation, so we removed that module in the combination evaluation and will continue on optimizing this part.
+
+| **Stage/Scale**                       | **PSNR**⬆️ | **SSIM**⬆️ | **NIQE**⬇️ |
+| ------------------------------------- | --------- | --------- | --------- |
+| Baseline Iterative RCAN               | **18.99** | **0.502** |           |
+| Baseline ESRGAN                       | **17.77** | **0.446** |           |
+| Only CLSLoss                          | **16.88** | **0.403** |           |
+| Only Share Features                   | **18.46** | **0.479** |           |
+| Only Spatial Attention                | **18.29** | **0.452** |           |
+| *Shared Features + Spatial Attention* |           |           |           |
+
+However, traditional benchmarks are not capable of representing the semantics, so we may introduce some semantic-aware deep IQA methods into evaluation in the future. That would be another work.
+
