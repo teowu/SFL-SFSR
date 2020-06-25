@@ -17,7 +17,7 @@ Another problem often confusing researchers is the Low Resolution fine-grained c
 
 On the contrary, recent researches on fine-grained classification has demonstrated that the attention areas (where the pixels contribute the most to the Prediction Labels) are often very local, which suggests that prior knowledge from common fine-grained classification will be focusing more on **local semantic features**.
 
-Now the branches are set together and consider how a human see something far: we're doing the "what this is (recognition)" and "human eye super-resolution" synchronously, where the two task help each other in this mechanism. We 
+Now the branches are set together and consider how a human see something far: we're doing the "what this is (recognition)" and "human eye super-resolution" synchronously, where the two task help each other in this mechanism.
 
 **We desire to construct deep learning pipelines to modulate human eye super-resolution process, learn Semantic-Favorable Super Resolution, especially in extreme cases.** For this purpose, we have decided to indirectly use our pretrained higher-scale fine-grained classfication models, and use this thing to both help the Semantic-Favorable Super Resolution and Low-Scale Fine-Grained Classification. Our contributions are mainly as follows:
 
@@ -114,73 +114,6 @@ python3 train.py train.yml
 ```shell
 python3 test.py test.yml
 ```
-
-
-## base OpenSource Repositories
-
-The proposed method is brand new, but in order to not "build the wheels again", our codes are based on the following OpenSource Repositories on GitHub.
-
-1. **Xintao Wang et. al, BasicSR** (basic SR and SRGAN pipeline, used as baseline)
-
-This framework is very good for Super Resolution practicers because it provides many functionals such as load/save network, update learning rate and network printing, etc. It also supports changing the loss functions, network architectures and dataloaders very conveniently. We are building our blocks on the BasicSR base class and **altered** the **loss functions, network architectures, training pipelines and dataloaders**.
-
-The raw module (ESRGAN with iterative-RCAN) is set as the baseline model.
-
-2. **Yulun Zhang et. al, RCAN** (state-of-the art SR module)
-
-RCAN is the state-of-the-art Super Resolution Generator module and is often used as backbone of . However, as it is primarily designed for 2x/3x/4x Super Resolution, the original RCAN uses the LR image as input and provides *only one convolutional layer* for each upsampling step(2x) for 4x/8x/16x/... **Large Scale Super Resolution**. This will largely reduce the *learning ability* of multi-scale features, especially intermediate-scale features. As we are training on 8x/16x Large Scale Super Resolution, we must make sure that the intermediate scales are well-built, and we added a residual group (with 6 residual blocks and 12 convolutional layers) for Super Resolution.
-
-This iterative-RCAN is also set as the baseline model.
-
-3. **Timothy Haoning Wu, DMDR** (a workflow on real-world SR based on BasicSR)
-
-The dataset generator is based on my DMDR and added the four channel concatenate input for *Spatial Attention Mechanism* learning. The train.py is also based on this repo finished earlier this year.
-
-This method is far from the DMDR, and I used the DMDR just because I'm familiar with the general pipelines I built on this work.
-
-4. Torchvision
-
-While building the pre-training network, we used the VGG19-Pretrained architecture from Torchvision and removed all fc-layers, changing them to Global Average Pooling (GAP) and Convolution (Kernel-Size=1).
-
-
-## Contributions of Team Members
-
-####  Phase 1:  Pipeline Construcion
-
-This part is finished together.
-
-Idea and Architecture Construction: Haoning Wu and Jiaheng Han
-
-Dataset Acquiring and Pre-processing: Jiaheng Han
-
-Kernel Pipeline Construction: Haoning Wu
-
-
-#### Phase 2: Method Building
-
-This part is finished together.
-
-
-Network Code Building: Haoning Wu
-
-Model Pipeline Building (Stage 2,3,4): Haoning Wu
-
-Stage 1 Training Framework and Experimenting: Jiaheng Han
-
-#### Phase 3: Experimenting
-
-This part is finished together.
-
-
-CAM Generating: Jiaheng Han (Coding) and Haoning Wu (Debugging)
-
-Experimental Debugging on Model Pipeline: Jiaheng Han
-
-Major-flow Experimenting on Stage 2,3,4: Haoning Wu
-
-#### Phase 4: Method Review (Report and Presentation)
-
-This part is finished together.
 
 ## Experimental Results
 
