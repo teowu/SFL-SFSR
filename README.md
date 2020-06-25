@@ -133,12 +133,12 @@ The result of only CLSLoss (Stage 2) does not match our expectation, so we remov
 
 | **Stage/Scale**                       | **PSNR**⬆️ | **SSIM**⬆️ | **NIQE**⬇️ |
 | ------------------------------------- | --------- | --------- | --------- |
-| Baseline Iterative RCAN               | **18.99** | **0.502** |           |
-| Baseline ESRGAN                       | **17.77** | **0.446** |           |
-| Only CLSLoss                          | **16.88** | **0.403** |           |
-| Only Share Features                   | **18.46** | **0.479** |           |
-| Only Spatial Attention                | **18.29** | **0.452** |           |
-| *Shared Features + Spatial Attention* |           |           |           |
+| Baseline Iterative RCAN               | **18.99** | **0.502** |   0.768   |
+| Baseline ESRGAN                       |   17.77   |   0.446   |   0.542   |
+| Only CLSLoss                          |   16.88   |   0.403   |   0.578   |
+| Only Share Features                   |   18.46   |   0.479   |   0.407   |
+| Only Spatial Attention                |   18.29   |   0.452   |   0.458   |
+| *Shared Features + Spatial Attention* | **18.82** | **0.501** | **0.401** |
 
 However, traditional benchmarks are not capable of representing the semantics, so we may introduce some semantic-aware deep IQA methods into evaluation in the future. That would be another work.
 
