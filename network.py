@@ -4,9 +4,17 @@ import torchvision
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from PerceptualSimilarity import models
 from torch.autograd import Variable
 
+class PerceptualLossLPIPS(nn.Module):
+    def __init__(self):
+        super(PerceptualLossLPIPS, self).__init__()
+        self.loss_network = models.PerceptualLoss(use_gpu=torch.cuda.is_available())
+
+    def forward(self, x, y):
+        return self.loss_network.forward(x, y, normalize=True).mean()
+    
 class Discriminator_VGG_256(nn.Module):
     def __init__(self, in_nc, nf):
         super(Discriminator_VGG_256, self).__init__()

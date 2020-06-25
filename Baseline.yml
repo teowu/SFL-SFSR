@@ -83,7 +83,7 @@ train:
   feature_criterion: l1
   feature_weight: !!float 1e-1
   gan_type: ragan  # gan | ragan
-  gan_weight: !!float 0
+  gan_weight: !!float 1e-3
 
   D_update_ratio: 1
   D_init_iters: 0

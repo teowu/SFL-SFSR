@@ -163,9 +163,9 @@ This part is finished together.
 
 Network Code Building: Haoning Wu
 
-Model Pipeline Building: Haoning Wu
+Model Pipeline Building (Stage 2,3,4): Haoning Wu
 
-Phase 1 Pre-training Framework: Jiaheng Han
+Stage 1 Training Framework and Experimenting: Jiaheng Han
 
 #### Phase 3: Experimenting
 
@@ -176,7 +176,7 @@ CAM Generating: Jiaheng Han (Coding) and Haoning Wu (Debugging)
 
 Experimental Debugging on Model Pipeline: Jiaheng Han
 
-Major-flow Experimenting on Phase 2,3,4: Haoning Wu
+Major-flow Experimenting on Stage 2,3,4: Haoning Wu
 
 #### Phase 4: Method Review (Report and Presentation)
 

@@ -15,6 +15,7 @@ import util
 from data import create_dataloader, create_dataset
 from clsgan_sr import CLSGAN_Model as Model
 from srgan import SRGAN_Model as Baseline_Model
+from network import PerceptualLossLPIPS
 
 
 def init_dist(backend='nccl', **kwargs):
@@ -26,6 +27,7 @@ def init_dist(backend='nccl', **kwargs):
     num_gpus = torch.cuda.device_count()
     torch.cuda.set_device(rank % num_gpus)
     dist.init_process_group(backend=backend, **kwargs)
+    
 
 
 def main():
@@ -98,6 +100,7 @@ def main():
     # -------------------------------------------- ADDED --------------------------------------------
     l1_loss = torch.nn.L1Loss()
     mse_loss = torch.nn.MSELoss()
+    calc_lpips = PerceptualLossLPIPS()
     if torch.cuda.is_available():
         l1_loss = l1_loss.cuda()
         mse_loss = mse_loss.cuda()
@@ -167,8 +170,8 @@ def main():
         for bus, train_data in enumerate(train_bar):
 
              # validation
-            if epoch % opt['train']['val_freq'] == 0 and bus == 0 and rank <= 0 and epoch != 0:
-                avg_ssim = avg_psnr = avg_psnr_n = val_pix_err_f = val_pix_err_nf = val_mean_color_err = 0.0
+            if epoch % opt['train']['val_freq'] == 0 and bus == 0 and rank <= 0:
+                avg_ssim = avg_psnr = avg_lpips = val_pix_err_f = val_pix_err_nf = val_mean_color_err = 0.0
                 print("into validation!")
                 idx = 0
                 val_bar = tqdm(val_loader, desc='[%d/%d]' % (epoch, total_epochs))
@@ -217,6 +220,7 @@ def main():
                     #cropped_nr_img = nr_img[crop_size:-crop_size, crop_size:-crop_size, :]
                     avg_psnr += util.calculate_psnr(sr_img * 255, gt_img * 255)
                     avg_ssim += util.calculate_ssim(sr_img * 255, gt_img * 255)
+                    avg_lpips += calc_lpips(visuals['SR'], visuals['GT'])
                     #avg_psnr_n += util.calculate_psnr(cropped_lq_img * 255, cropped_nr_img * 255)
 
                     # ----------------------------------------- ADDED -----------------------------------------
@@ -227,7 +231,7 @@ def main():
                 
                 avg_psnr = avg_psnr / idx
                 avg_ssim = avg_ssim / idx
-                #avg_psnr_n = avg_psnr_n / idx
+                avg_lpips = avg_lpips / idx
                 val_pix_err_f /= idx
                 val_pix_err_nf /= idx
                 val_mean_color_err /= idx
@@ -235,15 +239,17 @@ def main():
 
 
                 # log
-                logger.info('# Validation # PSNR: {:.4e}, {:.4e},'.format(avg_psnr, avg_psnr_n))
-                logger.info('# Validation # SSIM: {:.4e}'.format(avg_ssim))
+                logger.info('# Validation # PSNR: {:.4e},'.format(avg_psnr))
+                logger.info('# Validation # SSIM: {:.4e},'.format(avg_ssim))
+                logger.info('# Validation # LPIPS: {:.4e},'.format(avg_lpips))
                 logger_val = logging.getLogger('val')  # validation logger
-                logger_val.info('<epoch:{:3d}, iter:{:8,d}> psnr: {:.4e}'.format(
-                    epoch, current_step, avg_psnr))
+                logger_val.info('<epoch:{:3d}, iter:{:8,d}> psnr: {:.4e} ssim: {:.4e} lpips: {:.4e}'.format(
+                    epoch, current_step, avg_psnr, avg_ssim, avg_lpips))
                 # tensorboard logger
                 if opt['use_tb_logger'] and 'debug' not in opt['name']:
                     tb_logger.add_scalar('val_psnr', avg_psnr, current_step)
                     tb_logger.add_scalar('val_ssim', avg_ssim, current_step)
+                    tb_logger.add_scalar('val_lpips', avg_lpips, current_step)
                     tb_logger.add_scalar('val_pix_err_nf', val_pix_err_nf, current_step)
                     tb_logger.add_scalar('val_mean_color_err', val_mean_color_err, current_step)
 

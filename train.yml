@@ -54,7 +54,7 @@ network_G:
 
 #### path
 path:
-  pretrain_model_G:
+  pretrain_model_G: ../bird/train.pth
   pretrain_model_C: ../bird/prt.pth
   strict_load: true
   resume_state: # ../experiments/DF2K_jpeg_SDSR_model/training_state/45000.state
@@ -82,9 +82,9 @@ train:
   pixel_weight: !!float 1
   cls_criterion: l1
   cls_weight: 0
-  brc_weight: !!float 1e-6
+  brc_weight: !!float 1e-5
   feature_criterion: l1
-  feature_weight: !!float 1e-1
+  feature_weight: !!float 3e-2
   gan_type: ragan  # gan | ragan
   gan_weight: !!float 1e-3
 
