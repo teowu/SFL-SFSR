@@ -1,7 +1,8 @@
 bird:
     train: ../datasets/bird/hr/train
     valid: ../datasets/bird/hr/valid
-    test: ../datasets/bird/hr/test    
+    test: ../datasets/bird/hr/test
+    testsr: ../datasets/bird/hr/test
 bird_lr:
     train: ../datasets/bird/lr/train
     valid: ../datasets/bird/lr/valid
@@ -14,4 +15,4 @@ bird_lr_x16:
     test: ../datasets/bird/lr_x16/test
     cam_train: ../datasets/bird/lr_x16/cam_train
     cam_valid: ../datasets/bird/lr_x16/cam_valid
-
+    cam_test: ../datasets/bird/lr_x16/cam_test

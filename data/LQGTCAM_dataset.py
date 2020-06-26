@@ -34,7 +34,7 @@ class LQGTCAMDataset(data.Dataset):
                 for ele in self.paths_GT:
                     if os.path.join(opt['dataroot_LQ'], ele.split('/')[-1]) in self.paths_LQ:
                         self.paths_nGT.append(ele)
-            self.paths_GT = self.paths_nGT
+                self.paths_GT = self.paths_nGT
             assert len(self.paths_LQ) == len(
                 self.paths_GT
             ), 'GT and LQ datasets have different number of images - {}, {}.'.format(

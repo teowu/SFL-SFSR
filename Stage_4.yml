@@ -53,7 +53,7 @@ network_G:
 
 #### path
 path:
-  pretrain_model_G:
+  pretrain_model_G: ../bird/S4.pth
   pretrain_model_C: ../bird/prt.pth
   strict_load: true
   resume_state: # ../experiments/DF2K_jpeg_SDSR_model/training_state/45000.state

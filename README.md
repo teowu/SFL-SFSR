@@ -40,6 +40,8 @@ You can see the detailed method in how-to-train section.
 
 ## How to Train
 
+You may download the [pretrained models](https://pan.baidu.com/s/1J3Gmh73fby4g7w5d9c8aJg)(Code:uleh). 
+
 There are generally four stages of the whole experiment pipeline.
 
 ### Stage 1: Pre-train a fine-grained classification
@@ -69,7 +71,7 @@ You may try both ways of importing this loss,
 RUN as follows.
 
 ```shell
-python3 train.py Stage_2.yml
+python3 train.py -opt Stage_2.yml
 ```
 
 ### Stage 3: Shared-Features Learning (SFL)
@@ -79,7 +81,7 @@ python3 train.py Stage_2.yml
 RUN as follows.
 
 ```shell
-python3 train.py Stage_3.yml
+python3 train.py -opt Stage_3.yml
 ```
 
 *REMINDer: The low-res Classification result is not benchmarked in the process above.*
@@ -99,21 +101,32 @@ python3 cam_generator.py
 Then RUN as follows.
 
 ```shell
-python3 train.py Stage_4.yml
+python3 train.py -opt Stage_4.yml
 ```
 
 ### Combine the Stages
 ```shell
-python3 train.py train.yml
+python3 train.py -opt train.yml
 ```
 
 ## How to Test
 
-*Not finish building yet. When finished, run the following code.*
+*Test our proposed method----*
 
 ```shell
-python3 test.py test.yml
+python3 test.py -opt test.yml
 ```
+
+*or to test the baseline----*
+
+```shell
+python3 test.py -opt test_baseline.yml
+```
+
+But prepare the [test dataset (HR)](https://pan.baidu.com/s/1zWnC4cM0HMQEivQu6b4M3A)(Code:ynoy), [test dataset (LR and CAM)](https://pan.baidu.com/s/1RD1IgzXyJi5EaUSXmYDtZQ)(Code:79f2) and the [pretrained models](https://pan.baidu.com/s/1J3Gmh73fby4g7w5d9c8aJg)(Code:uleh) in your directory and keep it the same with the options in [Proposed](test.yml) and [Baseline](test_baseline.yml).
+
+**We use Baidu Drive to store the pretrained models and test dataset, please click the hyperlink.**
+
 
 ## Experimental Results
 
@@ -131,14 +144,14 @@ We have tested the following combinations so far, showing the previledge of our 
 
 The result of only CLSLoss (Stage 2) does not match our expectation, so we removed that module in the combination evaluation and will continue on optimizing this part.
 
-| **Stage/Scale**                       | **PSNR**⬆️ | **SSIM**⬆️ | **NIQE**⬇️ |
+| **Stage/Scale**                       | **PSNR**⬆️ | **SSIM**⬆️ |**LPIPS**⬇️ |
 | ------------------------------------- | --------- | --------- | --------- |
-| Baseline Iterative RCAN               | **18.99** | **0.502** |   0.768   |
-| Baseline ESRGAN                       |   17.77   |   0.446   |   0.542   |
-| Only CLSLoss                          |   16.88   |   0.403   |   0.578   |
-| Only Share Features                   |   18.46   |   0.479   |   0.407   |
-| Only Spatial Attention                |   18.29   |   0.452   |   0.458   |
-| *Shared Features + Spatial Attention* | **18.82** | **0.501** | **0.401** |
+| Baseline Iterative RCAN               | **18.99** | **0.502** |   0.568   |
+| Baseline ESRGAN                       |   17.77   |   0.446   |   0.412   |
+| Only CLSLoss                          |   16.88   |   0.403   |   0.478   |
+| Only Share Features                   |   18.33   |   0.479   |   3.908   |
+| Only Spatial Attention                | **18.58** | **0.484** |   0.411   |
+| *Shared Features + Spatial Attention* |   17.93   |   0.465   | **0.373** |
 
-However, traditional benchmarks are not capable of representing the semantics, so we may introduce some semantic-aware deep IQA methods into evaluation in the future. That would be another work.
+However, traditional benchmarks are not capable of representing the semantics (*the baseline is also not bad on LPIPS but losing much semantics*), so we may introduce some semantic-aware deep IQA methods into evaluation in the future. That would be another work.
 

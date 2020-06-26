@@ -12,8 +12,10 @@ MixCorrupt: True
 dataset:
   test:
     name: test
-    mode: LR
-    dataroot_LR: ../datasets/bird/hr/test
+    mode: LQGTCAM
+    dataroot_LR: ../datasets/bird/lr_x16/test
+    dataroot_CAM: ../datasets/bird/lr_x16/cam_test
+    dataroot_GT: ../datasets/bird/hr/test
 datasets:
   train:
     name: train 
@@ -62,7 +64,7 @@ path:
 #### training settings: learning rate scheme, loss
 train:
   br_optimizer: branch
-  lr_G: !!float 2e-4
+  lr_G: !!float 1e-4
   weight_decay_G: 0
   beta1_G: 0.9
   beta2_G: 0.999
@@ -82,9 +84,9 @@ train:
   pixel_weight: !!float 1
   cls_criterion: l1
   cls_weight: 0
-  brc_weight: !!float 1e-5
+  brc_weight: !!float 5e-5
   feature_criterion: l1
-  feature_weight: !!float 3e-2
+  feature_weight: !!float 1e-1
   gan_type: ragan  # gan | ragan
   gan_weight: !!float 1e-3
 

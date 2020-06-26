@@ -16,7 +16,7 @@ dataset = 'bird'
 target = PATHS['bird_lr_x16']
 model = VGG_Classifier().cuda()
 model.load_model('../bird/prt.pth')
-train_set = loader.TrainDataset(PATHS[dataset]['train'])
+train_set = loader.TrainDataset(PATHS[dataset]['test'], is_test=True)
 train_loader = DataLoader(dataset=train_set, num_workers=1, batch_size=1, shuffle=True)
 
 val_set = loader.TrainDataset(PATHS[dataset]['valid'], is_train=False)
@@ -28,11 +28,11 @@ for image, label, indices in train_loader:
         cam = model.get_cam(image, 1/16).cpu()
         mm = torch.min(cam)
         MM = torch.max(cam)
-    save_path = os.path.join(target['cam_train'], indices[0].split('/')[-1])
+    save_path = os.path.join(target['cam_test'], indices[0].split('/')[-1])
     print(save_path)
     cv2.imwrite(save_path, util.tensor2img(cam, min_max=(mm,MM)))
 
-
+exit()
 
 
 for image, label, indices in val_loader:

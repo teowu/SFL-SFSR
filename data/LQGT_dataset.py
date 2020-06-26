@@ -34,7 +34,7 @@ class LQGTDataset(data.Dataset):
                 for ele in self.paths_GT:
                     if os.path.join(opt['dataroot_LQ'], ele.split('/')[-1]) in self.paths_LQ:
                         self.paths_nGT.append(ele)
-            self.paths_GT = self.paths_nGT
+                self.paths_GT = self.paths_nGT
             assert len(self.paths_LQ) == len(
                 self.paths_GT
             ), 'GT and LQ datasets have different number of images - {}, {}.'.format(
@@ -114,7 +114,7 @@ class LQGTDataset(data.Dataset):
             if img_LQ.ndim == 2:
                 img_LQ = np.expand_dims(img_LQ, axis=2)
 
-        if True: #self.opt['phase'] == 'train':
+        if self.opt['phase'] == 'train':
             # if the image size is too small
             H, W, _ = img_GT.shape
             if H < GT_size or W < GT_size:
